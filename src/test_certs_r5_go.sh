@@ -34,6 +34,13 @@ srcdir=$inputdir/$verifier/src
 mkdir -p $outputdir
 printf "Build time: %s\n\n" "$(date)" > $logfile
 
+# The checker's dependencies must be the ones recorded in go.sum.
+(cd $srcdir && go mod verify) 2>&1 | tee -a $logfile
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+    echo "ERROR: the dependencies of the $verifier checker do not match go.sum" | tee -a $logfile
+    exit 1
+fi
+
 # Build the checker once; it reads the zips directly, so nothing is unzipped.
 builddir=$(mktemp -d)
 trap 'rm -rf "$builddir"' EXIT
