@@ -120,11 +120,37 @@ jobs:
         with:
           name: Compatibility_composite-refl-impl_csv
           path: ./output/
+  go_crypto_validation:
+    runs-on: ubuntu-latest
+    container: golang:1.27
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Test artifacts with the Go standard library (go-crypto provider)
+        run: ./src/test_certs_r5_go.sh go-crypto
+      - name: Save artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Compatibility_go_crypto_csv
+          path: ./output/
+  okwuosa_validation:
+    runs-on: ubuntu-latest
+    container: golang:1.27
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Test artifacts with CIRCL (okwuosa provider)
+        run: ./src/test_certs_r5_go.sh okwuosa
+      - name: Save artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Compatibility_okwuosa_csv
+          path: ./output/
   build_results_html:
     runs-on: ubuntu-latest
     container: ubuntu:latest
     # needs: [bc_validation, openssl_cert_validation, openssl_cms_validation, ssai_validation, composite_ref_impl_validation]
-    needs: [bc_validation, openssl_cert_validation, openssl_cms_validation, composite_ref_impl_validation, qubip_aurora_cert_validation]
+    needs: [bc_validation, openssl_cert_validation, openssl_cms_validation, composite_ref_impl_validation, qubip_aurora_cert_validation, go_crypto_validation, okwuosa_validation]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -163,12 +189,22 @@ jobs:
         with:
           name: Compatibility_composite-refl-impl_csv
           path: output/
+      - name: Get go-crypto results from previous job
+        uses: actions/download-artifact@v4
+        with:
+          name: Compatibility_go_crypto_csv
+          path: output/
+      - name: Get okwuosa results from previous job
+        uses: actions/download-artifact@v4
+        with:
+          name: Compatibility_okwuosa_csv
+          path: output/
       - name: Build compat matrix (certs_r5)
         run: ./src/rebuild_results_certs_r5.sh
       - name: Build compat matrix (cms_v3)
         run: ./src/rebuild_results_cms_v3.sh
       - name: Copy output files (automated certs_r5)
-        run: cp ./docs/pqc_hackathon_results_certs_r5_automated_tests.html ./output/certs/bc_certs.log ./output/certs/openssl_certs.log ./output/certs/composite-sigs-ref-impl.log ./output/certs/composite-kem-ref-impl.log ./output/cms/openssl_cms.log ./output/certs/qubip-aurora_certs.log ./docs/gh-pages
+        run: cp ./docs/pqc_hackathon_results_certs_r5_automated_tests.html ./output/certs/bc_certs.log ./output/certs/openssl_certs.log ./output/certs/composite-sigs-ref-impl.log ./output/certs/composite-kem-ref-impl.log ./output/cms/openssl_cms.log ./output/certs/qubip-aurora_certs.log ./output/certs/go-crypto_certs.log ./output/certs/okwuosa_certs.log ./docs/gh-pages
       - name: Copy output files (automated cms_v3)
         run: cp ./docs/pqc_hackathon_results_cms_v3_automated_tests.html ./output/cms/openssl_cms.log ./docs/gh-pages
       - name: Copy output files (manual r5/v1)
